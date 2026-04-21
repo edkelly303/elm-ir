@@ -1,0 +1,11 @@
+{
+    "targets": {
+        "Diff examples": {
+            "inputs": [
+                "src/Main.elm"
+            ],
+            "output": "build/main.js"
+        }
+    },
+    "serve": "./build", "port": 8007
+}

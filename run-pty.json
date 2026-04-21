@@ -1,0 +1,123 @@
+[
+    {
+        "command": [
+            "bash",
+            "-c",
+            "ELM_WATCH_OPEN_EDITOR='code --goto \"$file:$line:$column\"' npx elm-watch@beta hot"
+        ],
+        "cwd": "./examples",
+        "title": "npx elm-watch@beta hot",
+        "status": {
+            "⏳": [
+                "⏳",
+                "W"
+            ],
+            "🚨": [
+                "🚨",
+                "E"
+            ],
+            "✅": [
+                "✅",
+                "+"
+            ]
+        },
+        "defaultStatus": [
+            "⏳",
+            "W"
+        ]
+    },
+    {
+        "command": [
+            "npx",
+            "elm-doc-preview",
+            "--port",
+            "8101"
+        ],
+        "title": "npx elm-doc-preview",
+        "status": {
+            "watching package": [
+                "✅",
+                "+"
+            ]
+        },
+        "defaultStatus": [
+            "⏳",
+            "W"
+        ]
+    },
+    {
+        "command": [
+            "npx",
+            "elm-review",
+            "--watch",
+            "--debug"
+        ],
+        "title": "npx elm-review",
+        "status": {
+            "ELM-REVIEW ERROR": [
+                "🚨",
+                "E"
+            ],
+            "I found no": [
+                "✅",
+                "+"
+            ]
+        },
+        "defaultStatus": [
+            "⏳",
+            "W"
+        ]
+    },
+    {
+        "command": [
+            "npx",
+            "elm-review",
+            "--watch",
+            "--rules",
+            "Review.Documentation.CodeSnippet",
+            "--fix-all-without-prompt",
+            "--debug"
+        ],
+        "title": "npx elm-review --watch --rules Review.Documentation.CodeSnippet --fix-all-without-prompt",
+        "status": {
+            "ELM-REVIEW ERROR": [
+                "🚨",
+                "E"
+            ],
+            "I found no": [
+                "✅",
+                "+"
+            ]
+        },
+        "defaultStatus": [
+            "⏳",
+            "W"
+        ]
+    },
+    {
+        "command": [
+            "npx",
+            "elm-test",
+            "--watch"
+        ],
+        "title": "npx elm-test --watch",
+        "status": {
+            "TEST RUN PASSED": [
+                "✅",
+                "+"
+            ],
+            "TEST RUN FAILED": [
+                "🚨",
+                "E"
+            ],
+            "`elm make` failed with exit code 1.": [
+                "⚠️",
+                "X"
+            ]
+        },
+        "defaultStatus": [
+            "⏳",
+            "W"
+        ]
+    }
+]

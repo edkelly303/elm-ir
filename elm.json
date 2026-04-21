@@ -1,0 +1,32 @@
+{
+    "type": "application",
+    "source-directories": [
+        "src",
+        "examples/src"
+    ],
+    "elm-version": "0.19.1",
+    "dependencies": {
+        "direct": {
+            "edkelly303/elm-exhaustive-generators": "1.0.0",
+            "edkelly303/elm-nested-tuples": "1.0.3",
+            "elm/browser": "1.0.2",
+            "elm/core": "1.0.5",
+            "elm/html": "1.0.1",
+            "elm/json": "1.1.4",
+            "elm/random": "1.0.0",
+            "elm-community/random-extra": "3.2.0",
+            "elm-explorations/test": "2.2.1",
+            "miniBill/elm-codec": "2.3.1"
+        },
+        "indirect": {
+            "elm/bytes": "1.0.8",
+            "elm/time": "1.0.0",
+            "elm/url": "1.0.0",
+            "elm/virtual-dom": "1.0.5"
+        }
+    },
+    "test-dependencies": {
+        "direct": {},
+        "indirect": {}
+    }
+}
