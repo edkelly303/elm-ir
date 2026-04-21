@@ -42,7 +42,7 @@
           run () {
             cd "$DEVDIR"
             code .
-            (sleep 2; xdg-open 'http://localhost:8008') &
+            (sleep 2; xdg-open 'http://localhost:8007') &
             npx run-pty run-pty.json
           }
         '';
