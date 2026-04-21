@@ -7,65 +7,6 @@ import Json.Decode as JD
 import Json.Encode as JE
 
 
-
--- example
-
-
-type Example
-    = Yellow
-    | Green { g : Int }
-    | Red Bool String
-
-
-exampleMultitool =
-    custom
-        (\red yellow green value ->
-            case value of
-                Red b s ->
-                    red b s
-
-                Yellow ->
-                    yellow
-
-                Green i ->
-                    green i
-        )
-        |> variant2 "Red" Red bool string
-        |> variant0 "Yellow" Yellow
-        |> variant1 "Green"
-            Green
-            (record (\g -> { g = g })
-                |> field "g" .g int
-                |> endRecord
-            )
-        |> endCustom
-        |> map Basics.identity
-
-
-fuzzer : Fuzz.Fuzzer Example
-fuzzer =
-    exampleMultitool fuzzAdapter
-
-
-decoder : JD.Decoder Example
-decoder =
-    exampleMultitool decoderAdapter
-
-
-encoder : Example -> JE.Value
-encoder =
-    exampleMultitool encoderAdapter
-
-
-exhaustive : Exhaustive.Generator Example
-exhaustive =
-    exampleMultitool exhaustiveAdapter
-
-
-
--- adapters
-
-
 decoderAdapter =
     { bool = JD.bool
     , string = JD.string
@@ -103,7 +44,6 @@ decoderAdapter =
     , field = \name _ dec prev -> JD.map2 (|>) (JD.field name dec) prev
     , endRecord = Basics.identity
     , map = JD.map
-    , andThen = JD.andThen
     }
 
 
@@ -141,7 +81,6 @@ encoderAdapter =
     , field = \name getter enc prev -> \rec -> ( name, enc (getter rec) ) :: prev
     , endRecord = \prev -> \rec -> JE.object (List.reverse (prev rec))
     , map = \_ x -> x
-    , andThen = \_ x -> x
     }
 
 
@@ -158,7 +97,6 @@ fuzzAdapter =
     , field = \_ _ f -> Fuzz.andMap f
     , endRecord = Basics.identity
     , map = Fuzz.map
-    , andThem = Fuzz.andThen
     }
 
 
@@ -175,77 +113,4 @@ exhaustiveAdapter =
     , field = \_ _ e -> Exhaustive.field e
     , endRecord = Basics.identity
     , map = Exhaustive.map
-    , andThen = Exhaustive.andThen
     }
-
-
-
--- combinators
-
-
-int =
-    .int
-
-
-bool =
-    .bool
-
-
-string =
-    .string
-
-
-custom match =
-    \adapter -> adapter.custom match
-
-
-variant0 name ctor prev =
-    \adapter ->
-        prev adapter
-            |> adapter.variant0 name ctor
-
-
-variant1 name ctor arg1 prev =
-    \adapter ->
-        prev adapter
-            |> adapter.variant1 name ctor (arg1 adapter)
-
-
-variant2 name ctor arg1 arg2 prev =
-    \adapter ->
-        prev adapter
-            |> adapter.variant2 name ctor (arg1 adapter) (arg2 adapter)
-
-
-endCustom prev =
-    \adapter ->
-        prev adapter
-            |> adapter.endCustom
-
-
-record ctor =
-    \adapter -> adapter.record ctor
-
-
-field name getter arg prev =
-    \adapter ->
-        prev adapter
-            |> adapter.field name getter (arg adapter)
-
-
-endRecord prev =
-    \adapter ->
-        prev adapter
-            |> adapter.endRecord
-
-
-map f prev =
-    \adapter ->
-        prev adapter
-            |> adapter.map f
-
-
-andThen f prev =
-    \adapter ->
-        prev adapter
-            |> adapter.andThen f
