@@ -1,5 +1,6 @@
 module Research.IR exposing (..)
 
+import Fuzz
 import Json.Decode as JD
 import Json.Encode as JE
 
@@ -72,7 +73,7 @@ unitDecoder =
 
 encode : IRCodec a b -> a -> JE.Value
 encode codec value =
-    codec.toIRType value
+    codec.toIR value
         |> encodeAdapter
 
 
@@ -81,40 +82,56 @@ decoder codec =
     decodeAdapter
         |> JD.andThen
             (\ir ->
-                case codec.fromIRType ir of
+                case codec.fromIR ir of
                     Ok s ->
                         JD.succeed s
 
-                    Err _ ->
+                    Err Error ->
                         JD.fail ""
             )
 
 
-
--- innards
-
-
-type Error
-    = Error
+fuzzer : IRCodec a b -> Fuzz.Fuzzer IR
+fuzzer codec =
+    codec.toIRType
+        |> fuzzAdapter
 
 
-type alias IRCodec a b =
-    { toIRType : a -> IR
-    , fromIRType : IR -> Result Error b
-    }
+
+-- adapters
 
 
-type IR
-    = Bool Bool
-    | String String
-      -- | Product (List IRType)
-    | Custom Int Variant
+fuzzAdapter : IRType -> Fuzz.Fuzzer IR
+fuzzAdapter irType =
+    case irType of
+        BoolT ->
+            Fuzz.bool |> Fuzz.map Bool
 
+        StringT ->
+            Fuzz.string |> Fuzz.map String
 
-type Variant
-    = Variant0
-    | Variant1 IR
-    | Variant2 IR IR
+        CustomT variants ->
+            Fuzz.oneOf
+                (List.indexedMap
+                    (\idx variant ->
+                        case variant of
+                            Variant0T ->
+                                Fuzz.constant
+                                    (Custom idx Variant0)
+
+                            Variant1T arg ->
+                                Fuzz.map
+                                    (\a -> Custom idx (Variant1 a))
+                                    (fuzzAdapter arg)
+
+                            Variant2T arg1 arg2 ->
+                                Fuzz.map2
+                                    (\a1 a2 -> Custom idx (Variant2 a1 a2))
+                                    (fuzzAdapter arg1)
+                                    (fuzzAdapter arg2)
+                    )
+                    variants
+                )
 
 
 encodeAdapter : IR -> JE.Value
@@ -189,10 +206,49 @@ decodeAdapter =
         ]
 
 
+
+-- innards
+
+
+type Error
+    = Error
+
+
+type alias IRCodec a b =
+    { toIR : a -> IR
+    , fromIR : IR -> Result Error b
+    , toIRType : IRType
+    }
+
+
+type IR
+    = Bool Bool
+    | String String
+    | Custom Int Variant
+
+
+type Variant
+    = Variant0
+    | Variant1 IR
+    | Variant2 IR IR
+
+
+type IRType
+    = BoolT
+    | StringT
+    | CustomT (List VariantT)
+
+
+type VariantT
+    = Variant0T
+    | Variant1T IRType
+    | Variant2T IRType IRType
+
+
 bool : IRCodec Bool Bool
 bool =
-    { toIRType = Bool
-    , fromIRType =
+    { toIR = Bool
+    , fromIR =
         \ir ->
             case ir of
                 Bool b ->
@@ -200,13 +256,14 @@ bool =
 
                 _ ->
                     Err Error
+    , toIRType = BoolT
     }
 
 
 string : IRCodec String String
 string =
-    { toIRType = String
-    , fromIRType =
+    { toIR = String
+    , fromIR =
         \ir ->
             case ir of
                 String s ->
@@ -214,20 +271,22 @@ string =
 
                 _ ->
                     Err Error
+    , toIRType = StringT
     }
 
 
 custom match =
     { match = match
     , index = 0
-    , fromIRType = \_ -> Err Error
+    , fromIR = \_ -> Err Error
+    , toIRType = []
     }
 
 
 variant0 ctor prev =
     { match = prev.match <| Custom prev.index Variant0
     , index = prev.index + 1
-    , fromIRType =
+    , fromIR =
         \ir ->
             case ir of
                 Custom selected Variant0 ->
@@ -235,52 +294,56 @@ variant0 ctor prev =
                         Ok ctor
 
                     else
-                        prev.fromIRType ir
+                        prev.fromIR ir
 
                 _ ->
-                    prev.fromIRType ir
+                    prev.fromIR ir
+    , toIRType = Variant0T :: prev.toIRType
     }
 
 
 variant1 ctor argfns prev =
-    { match = prev.match <| \arg -> Custom prev.index (Variant1 (argfns.toIRType arg))
+    { match = prev.match <| \arg -> Custom prev.index (Variant1 (argfns.toIR arg))
     , index = prev.index + 1
-    , fromIRType =
+    , fromIR =
         \ir ->
             case ir of
                 Custom selected (Variant1 arg) ->
                     if selected == prev.index then
-                        Result.map ctor (argfns.fromIRType arg)
+                        Result.map ctor (argfns.fromIR arg)
 
                     else
-                        prev.fromIRType ir
+                        prev.fromIR ir
 
                 _ ->
-                    prev.fromIRType ir
+                    prev.fromIR ir
+    , toIRType = Variant1T argfns.toIRType :: prev.toIRType
     }
 
 
 variant2 ctor arg1fns arg2fns prev =
-    { match = prev.match <| \arg1 arg2 -> Custom prev.index (Variant2 (arg1fns.toIRType arg1) (arg2fns.toIRType arg2))
+    { match = prev.match <| \arg1 arg2 -> Custom prev.index (Variant2 (arg1fns.toIR arg1) (arg2fns.toIR arg2))
     , index = prev.index + 1
-    , fromIRType =
+    , fromIR =
         \ir ->
             case ir of
                 Custom selected (Variant2 arg1 arg2) ->
                     if selected == prev.index then
-                        Result.map2 ctor (arg1fns.fromIRType arg1) (arg2fns.fromIRType arg2)
+                        Result.map2 ctor (arg1fns.fromIR arg1) (arg2fns.fromIR arg2)
 
                     else
-                        prev.fromIRType ir
+                        prev.fromIR ir
 
                 _ ->
-                    prev.fromIRType ir
+                    prev.fromIR ir
+    , toIRType = Variant2T arg1fns.toIRType arg2fns.toIRType :: prev.toIRType
     }
 
 
 endCustom prev =
-    { toIRType = prev.match
-    , fromIRType = prev.fromIRType
+    { toIR = prev.match
+    , fromIR = prev.fromIR
+    , toIRType = CustomT prev.toIRType
     }
 
 
@@ -289,8 +352,9 @@ map :
     -> IRCodec a b
     -> IRCodec a c
 map f prev =
-    { toIRType = prev.toIRType
-    , fromIRType = prev.fromIRType >> Result.map f
+    { toIR = prev.toIR
+    , fromIR = prev.fromIR >> Result.map f
+    , toIRType = prev.toIRType
     }
 
 
@@ -299,8 +363,9 @@ contramap :
     -> IRCodec a c
     -> IRCodec b c
 contramap f prev =
-    { toIRType = f >> prev.toIRType
-    , fromIRType = prev.fromIRType
+    { toIR = f >> prev.toIR
+    , fromIR = prev.fromIR
+    , toIRType = prev.toIRType
     }
 
 
@@ -309,6 +374,7 @@ andThen :
     -> IRCodec a b
     -> IRCodec a c
 andThen f prev =
-    { toIRType = prev.toIRType
-    , fromIRType = prev.fromIRType >> Result.andThen f
+    { toIR = prev.toIR
+    , fromIR = prev.fromIR >> Result.andThen f
+    , toIRType = prev.toIRType
     }
