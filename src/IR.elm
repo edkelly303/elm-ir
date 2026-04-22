@@ -199,9 +199,6 @@ andMap getter (IRCodec this) (IRCodec prev) =
         , fromIR =
             \ir ->
                 case ir of
-                    Product [] ->
-                        prev.fromIR ir
-
                     Product (thisField :: prevFields) ->
                         Result.map2 (\ctor val -> ctor val)
                             (prev.fromIR (Product prevFields))
