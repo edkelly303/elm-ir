@@ -6,6 +6,8 @@ module Multitool exposing
     , endCustom
     , endRecord
     , field
+    , fix
+    , fixP
     , float
     , int
     , list
@@ -169,3 +171,11 @@ map f prev =
     \adapter ->
         prev adapter
             |> adapter.map f
+
+
+fixP adapter multiTool prev =
+    fix adapter (multiTool prev)
+
+
+fix adapter multiTool _ =
+    multiTool adapter

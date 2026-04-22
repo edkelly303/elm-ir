@@ -15,11 +15,11 @@ import Multitool exposing (..)
 
 type Example
     = Yellow
-    | Green { g : Int }
+    | Green { g : Int } (Maybe Int)
     | Red Bool String
 
 
-exampleMultitool =
+exampleMultitool adapter1 adapter2 adapter3 =
     custom
         (\red yellow green value ->
             case value of
@@ -29,20 +29,25 @@ exampleMultitool =
                 Yellow ->
                     yellow
 
-                Green i ->
-                    green i
+                Green g h ->
+                    green g h
         )
-        |> variant2 "Red" Red bool string
+        |> fixP adapter1 (variant2 "Red" Red bool string)
         |> variant0 "Yellow" Yellow
-        |> variant1 "Green"
-            Green
-            (record (\g -> { g = g })
-                |> field "g" .g int
-                |> endRecord
-            )
+        |> fixP adapter2 (variant2 "Green" Green gM (fix adapter3 (maybe int)))
         |> endCustom
 
 
+hM =
+    record (\h -> { h = h })
+        |> field "h" .h int
+        |> endRecord
+
+
+gM =
+    record (\g -> { g = g })
+        |> field "g" .g int
+        |> endRecord
 
 
 
@@ -50,31 +55,38 @@ exampleMultitool =
 
 
 fuzzer =
-    exampleMultitool Adapters.fuzzAdapter
+    exampleMultitool
+        Adapters.fuzzAdapter
+        Adapters.fuzzAdapter
+        Adapters.fuzzAdapter
+        Adapters.fuzzAdapter
 
 
-
--- decoder : JD.Decoder Example
-
-
+decoder : JD.Decoder Example
 decoder =
-    exampleMultitool Adapters.decoderAdapter
+    exampleMultitool
+        Adapters.decoderAdapter
+        Adapters.decoderAdapter
+        Adapters.decoderAdapter
+        Adapters.decoderAdapter
 
 
-
--- encoder : Example -> JE.Value
-
-
+encoder : Example -> JE.Value
 encoder =
-    exampleMultitool Adapters.encoderAdapter
+    exampleMultitool
+        Adapters.encoderAdapter
+        Adapters.encoderAdapter
+        Adapters.encoderAdapter
+        Adapters.encoderAdapter
 
 
-
--- exhaustive : Exhaustive.Generator Example
-
-
+exhaustive : Exhaustive.Generator Example
 exhaustive =
-    exampleMultitool Adapters.exhaustiveAdapter
+    exampleMultitool
+        Adapters.exhaustiveAdapter
+        Adapters.exhaustiveAdapter
+        Adapters.exhaustiveAdapter
+        Adapters.exhaustiveAdapter
 
 
 
