@@ -17,6 +17,7 @@ type IR
     = Bool Bool
     | String String
     | Custom Int Variant
+    | Product (List IR)
 
 
 type Variant
@@ -29,6 +30,7 @@ type IRType
     = BoolT
     | StringT
     | CustomT (List VariantT)
+    | ProductT (List IRType)
 
 
 type VariantT
@@ -161,6 +163,59 @@ endCustom prev =
         { toIR = prev.match
         , fromIR = prev.fromIR
         , toIRType = CustomT prev.toIRType
+        }
+
+
+succeed ctor =
+    IRCodec
+        { toIR = \_ -> Product []
+        , fromIR =
+            \ir ->
+                case ir of
+                    Product [] ->
+                        Ok ctor
+
+                    _ ->
+                        Err Error
+        , toIRType = ProductT []
+        }
+
+
+andMap :
+    (a -> b)
+    -> IRCodec b c
+    -> IRCodec a (c -> d)
+    -> IRCodec a d
+andMap getter (IRCodec this) (IRCodec prev) =
+    IRCodec
+        { toIR =
+            \a ->
+                case prev.toIR a of
+                    Product prevFields ->
+                        Product (this.toIR (getter a) :: prevFields)
+
+                    _ ->
+                        Product [ this.toIR (getter a) ]
+        , fromIR =
+            \ir ->
+                case ir of
+                    Product [] ->
+                        prev.fromIR ir
+
+                    Product (thisField :: prevFields) ->
+                        Result.map2 (\ctor val -> ctor val)
+                            (prev.fromIR (Product prevFields))
+                            (this.fromIR thisField)
+
+                    _ ->
+                        Err Error
+        , toIRType =
+            case prev.toIRType of
+                ProductT prevFieldTypes ->
+                    ProductT (this.toIRType :: prevFieldTypes)
+
+                _ ->
+                    ProductT [ this.toIRType ]
         }
 
 
