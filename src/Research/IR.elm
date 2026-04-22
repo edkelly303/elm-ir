@@ -117,6 +117,7 @@ type Variant
     | Variant2 IR IR
 
 
+encodeAdapter : IR -> JE.Value
 encodeAdapter irType =
     case irType of
         Bool b ->
@@ -152,6 +153,7 @@ encodeAdapter irType =
                 ]
 
 
+decodeAdapter : JD.Decoder IR
 decodeAdapter =
     JD.oneOf
         [ JD.field "bool" JD.bool |> JD.map Bool
