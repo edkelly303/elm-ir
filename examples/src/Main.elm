@@ -4,7 +4,7 @@ import Adapters
 import Exhaustive
 import Fuzz
 import Html
-import IR exposing (..)
+import IR exposing (IRCodec)
 import Json.Decode as JD
 import Json.Encode as JE
 
@@ -17,7 +17,7 @@ type Example
 
 exampleMultitool : IRCodec Example Example
 exampleMultitool =
-    custom
+    IR.custom
         (\red yellow green value ->
             case value of
                 Red b s ->
@@ -29,10 +29,10 @@ exampleMultitool =
                 Green s ->
                     green s
         )
-        |> variant2 Red bool string
-        |> variant0 Yellow
-        |> variant1 Green string
-        |> endCustom
+        |> IR.variant2 Red IR.bool IR.string
+        |> IR.variant0 Yellow
+        |> IR.variant1 Green IR.string
+        |> IR.endCustom
 
 
 fuzzer : Fuzz.Fuzzer Example
