@@ -38,7 +38,16 @@ unitCodec : IRCodec () ()
 unitCodec =
     semaphoreCodec
         |> contramap (\() -> Yellow)
-        |> map (always ())
+        |> map (\_ -> Yellow)
+        |> andThen
+            (\s ->
+                case s of
+                    Yellow ->
+                        Ok ()
+
+                    _ ->
+                        Err Error
+            )
 
 
 encodeSemaphore : Semaphore -> JE.Value
@@ -290,4 +299,14 @@ contramap :
 contramap f prev =
     { toIRType = f >> prev.toIRType
     , fromIRType = prev.fromIRType
+    }
+
+
+andThen :
+    (b -> Result Error c)
+    -> IRCodec a b
+    -> IRCodec a c
+andThen f prev =
+    { toIRType = prev.toIRType
+    , fromIRType = prev.fromIRType >> Result.andThen f
     }
