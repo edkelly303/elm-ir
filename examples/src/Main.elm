@@ -15,16 +15,16 @@ type Example
 
 
 type alias Record =
-    { field1 : Int
-    , field2 : Char
+    { field1 : Bool
+    , field2 : Bool
     }
 
 
-fieldCodec : Codec Record Record
-fieldCodec =
+recordCodec : Codec Record Record
+recordCodec =
     IR.succeed Record
-        |> IR.andMap .field1 IR.int
-        |> IR.andMap .field2 IR.char
+        |> IR.andMap .field1 IR.bool
+        |> IR.andMap .field2 IR.bool
 
 
 exampleMultitool : Codec Example Example
@@ -43,7 +43,7 @@ exampleMultitool =
         )
         |> IR.variant2 Red IR.bool IR.string
         |> IR.variant0 Yellow
-        |> IR.variant2 Green IR.string fieldCodec
+        |> IR.variant2 Green IR.string recordCodec
         |> IR.endCustom
 
 
@@ -75,7 +75,7 @@ main : Html.Html msg
 main =
     let
         fuzzed =
-            Fuzz.examples 5 fuzzer
+            Fuzz.examples 2 fuzzer
 
         encoded =
             JE.encode 2 (JE.list encoder fuzzed)
@@ -90,6 +90,8 @@ main =
         , Html.text encoded
         , head "JSON decoder"
         , show decoded
+        , head "Differ"
+        , show (Adapters.diff recordCodec { field1 = False, field2 = False } { field1 = True, field2 = False })
 
         -- there's something really slow about the exhaustive generator adapter,
         -- let's switch it off for now...

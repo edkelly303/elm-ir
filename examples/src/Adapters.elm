@@ -1,10 +1,12 @@
 module Adapters exposing (..)
 
 -- import Exhaustive
+
 import Fuzz
 import IR exposing (IR(..), IRType)
 import Json.Decode as JD
 import Json.Encode as JE
+import Maybe.Extra
 
 
 encode : IR.Codec a b -> a -> JE.Value
@@ -37,9 +39,46 @@ fuzzer codec =
                     Ok y ->
                         Fuzz.constant y
 
-                    Err _ ->
+                    Err IR.Error ->
                         Fuzz.invalid ""
             )
+
+
+type alias Diff =
+    Maybe IR
+
+
+diff : IR.Codec a a -> a -> a -> Diff
+diff codec old new =
+    let
+        oldIR =
+            IR.toIR codec old
+
+        newIR =
+            IR.toIR codec new
+
+        help oldIR_ newIR_ =
+            case ( oldIR_, newIR_ ) of
+                ( IR.Bool b1, IR.Bool b2 ) ->
+                    if b1 == b2 then
+                        Just (IR.Product [])
+
+                    else
+                        Just (IR.Bool b2)
+
+                ( Product fields1, Product fields2 ) ->
+                    if List.length fields1 == List.length fields2 then
+                        List.map2 help fields1 fields2
+                            |> Maybe.Extra.combine
+                            |> Maybe.map Product
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+    in
+    help oldIR newIR
 
 
 
@@ -256,19 +295,19 @@ decodeAdapter =
                             Nothing
                 )
                 (JD.field "tag" JD.int)
-                (JD.field "args" (JD.list (JD.lazy (\_ -> decodeAdapter))))
+                (JD.field "args" (JD.list (JD.lazy (\() -> decodeAdapter))))
                 |> JD.andThen
-                    (\mc ->
-                        case mc of
+                    (\maybeIR ->
+                        case maybeIR of
                             Nothing ->
                                 JD.fail ""
 
-                            Just c ->
-                                JD.succeed c
+                            Just ir ->
+                                JD.succeed ir
                     )
             )
         , JD.field "product"
-            (JD.list (JD.lazy (\_ -> decodeAdapter))
+            (JD.list (JD.lazy (\() -> decodeAdapter))
                 |> JD.map IR.Product
             )
         ]
