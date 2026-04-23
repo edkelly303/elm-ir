@@ -1,7 +1,6 @@
 module Main exposing (..)
 
 import Adapters
-import Exhaustive
 import Fuzz
 import Html
 import IR exposing (Codec)
@@ -61,29 +60,26 @@ encoder =
     Adapters.encode exampleMultitool
 
 
-exhaustive : Exhaustive.Generator Example
-exhaustive =
-    Adapters.exhaustive exampleMultitool
 
-
-
--- main
+-- there's something really slow about the exhaustive generator adapter, let's
+-- switch it off for now...
+--
+-- exhaustive : Exhaustive.Generator Example
+-- exhaustive =
+--     Adapters.exhaustive exampleMultitool
 
 
 main : Html.Html msg
 main =
     let
         fuzzed =
-            Fuzz.examples 7 fuzzer
+            Fuzz.examples 5 fuzzer
 
         encoded =
             JE.encode 2 (JE.list encoder fuzzed)
 
         decoded =
             JD.decodeString (JD.list decoder) encoded
-
-        exhaustives =
-            exhaustive.nth 70
     in
     Html.pre []
         [ head "Fuzzer"
@@ -92,8 +88,12 @@ main =
         , Html.text encoded
         , head "JSON decoder"
         , show decoded
-        , head "Exhaustive generator"
-        , show exhaustives
+
+        -- there's something really slow about the exhaustive generator adapter,
+        -- let's switch it off for now...
+        --
+        -- , head "Exhaustive generator"
+        -- , show (exhaustive.nth 0)
         ]
 
 
