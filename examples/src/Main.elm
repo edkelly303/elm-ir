@@ -10,17 +10,19 @@ import Json.Encode as JE
 
 type Example
     = Yellow
-    | Green String RecordField
+    | Green String Record
     | Red Bool String
 
 
-type alias RecordField =
-    { field1 : Int, field2 : Char }
+type alias Record =
+    { field1 : Int
+    , field2 : Char
+    }
 
 
-fieldCodec : Codec RecordField RecordField
+fieldCodec : Codec Record Record
 fieldCodec =
-    IR.succeed RecordField
+    IR.succeed Record
         |> IR.andMap .field1 IR.int
         |> IR.andMap .field2 IR.char
 
