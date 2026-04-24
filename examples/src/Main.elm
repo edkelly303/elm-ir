@@ -49,19 +49,29 @@ exampleMultitool =
         |> IR.endCustom
 
 
-fuzzer : Fuzz.Fuzzer Example
-fuzzer =
+exampleFuzzer : Fuzz.Fuzzer Example
+exampleFuzzer =
     Adapters.Fuzz.fuzzer exampleMultitool
 
 
-decoder : JD.Decoder Example
-decoder =
+exampleDecoder : JD.Decoder Example
+exampleDecoder =
     Adapters.Json.decoder exampleMultitool
 
 
-encode : Example -> JE.Value
-encode =
+encodeExample : Example -> JE.Value
+encodeExample =
     Adapters.Json.encode exampleMultitool
+
+
+diffExample : Record -> Record -> Adapters.Diff.Diff
+diffExample =
+    Adapters.Diff.diff recordCodec
+
+
+patchExample : Adapters.Diff.Diff -> Record -> Result IR.Error Record
+patchExample =
+    Adapters.Diff.patch recordCodec
 
 
 
@@ -77,13 +87,25 @@ main : Html.Html msg
 main =
     let
         fuzzed =
-            Fuzz.examples 2 fuzzer
+            Fuzz.examples 2 exampleFuzzer
 
         encoded =
-            JE.encode 2 (JE.list encode fuzzed)
+            JE.encode 2 (JE.list encodeExample fuzzed)
 
         decoded =
-            JD.decodeString (JD.list decoder) encoded
+            JD.decodeString (JD.list exampleDecoder) encoded
+
+        old =
+            { field1 = False, field2 = False }
+
+        new =
+            { field1 = True, field2 = False }
+
+        diff =
+            diffExample old new
+
+        patched =
+            patchExample diff old
     in
     Html.pre []
         [ head "Fuzzer"
@@ -92,8 +114,10 @@ main =
         , Html.text encoded
         , head "JSON decoder"
         , show decoded
-        , head "Differ"
-        , show (Adapters.Diff.diff recordCodec { field1 = False, field2 = False } { field1 = True, field2 = False })
+        , head "Diff"
+        , show diff
+        , head "Patch"
+        , show patched
 
         -- there's something really slow about the exhaustive generator adapter,
         -- let's switch it off for now...
