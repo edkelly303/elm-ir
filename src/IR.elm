@@ -65,7 +65,7 @@ type IRType
     | StringType
     | IntType
     | FloatType
-    | CustomType (List VariantType)
+    | CustomType VariantType (List VariantType)
     | ProductType (List IRType)
     | ListType IRType
 
@@ -188,27 +188,27 @@ list (Codec item) =
         }
 
 
-type alias CustomCodec input output =
+type alias CustomCodec input variantType output =
     { match : input
     , fromIR : IR -> Result Error output
-    , toIRType : List VariantType
+    , toIRType : ( variantType, List VariantType )
     , index : Int
     }
 
 
-custom : input -> CustomCodec input output
+custom : input -> CustomCodec input () output
 custom match =
     { match = match
     , index = 0
     , fromIR = \_ -> Err Error
-    , toIRType = []
+    , toIRType = ( (), [] )
     }
 
 
 variant0 :
     output
-    -> CustomCodec (IR -> input) output
-    -> CustomCodec input output
+    -> CustomCodec (IR -> input) variantType output
+    -> CustomCodec input VariantType output
 variant0 ctor prev =
     { match = prev.match <| Custom prev.index Variant0
     , index = prev.index + 1
@@ -224,15 +224,18 @@ variant0 ctor prev =
 
                 _ ->
                     prev.fromIR ir
-    , toIRType = Variant0Type :: prev.toIRType
+    , toIRType =
+        ( Variant0Type
+        , Variant0Type :: Tuple.second prev.toIRType
+        )
     }
 
 
 variant1 :
     (arg1 -> output)
     -> Codec arg1 arg1
-    -> CustomCodec ((arg1 -> IR) -> input) output
-    -> CustomCodec input output
+    -> CustomCodec ((arg1 -> IR) -> input) variantType output
+    -> CustomCodec input VariantType output
 variant1 ctor (Codec argfns) prev =
     { match = prev.match <| \arg -> Custom prev.index (Variant1 (argfns.toIR arg))
     , index = prev.index + 1
@@ -248,7 +251,10 @@ variant1 ctor (Codec argfns) prev =
 
                 _ ->
                     prev.fromIR ir
-    , toIRType = Variant1Type argfns.toIRType :: prev.toIRType
+    , toIRType =
+        ( Variant1Type argfns.toIRType
+        , Variant1Type argfns.toIRType :: Tuple.second prev.toIRType
+        )
     }
 
 
@@ -256,8 +262,8 @@ variant2 :
     (arg1 -> arg2 -> output)
     -> Codec arg1 arg1
     -> Codec arg2 arg2
-    -> CustomCodec ((arg1 -> arg2 -> IR) -> input) output
-    -> CustomCodec input output
+    -> CustomCodec ((arg1 -> arg2 -> IR) -> input) variantType output
+    -> CustomCodec input VariantType output
 variant2 ctor (Codec arg1fns) (Codec arg2fns) prev =
     { match = prev.match <| \arg1 arg2 -> Custom prev.index (Variant2 (arg1fns.toIR arg1) (arg2fns.toIR arg2))
     , index = prev.index + 1
@@ -273,16 +279,29 @@ variant2 ctor (Codec arg1fns) (Codec arg2fns) prev =
 
                 _ ->
                     prev.fromIR ir
-    , toIRType = Variant2Type arg1fns.toIRType arg2fns.toIRType :: prev.toIRType
+    , toIRType =
+        ( Variant2Type arg1fns.toIRType arg2fns.toIRType
+        , Variant2Type arg1fns.toIRType arg2fns.toIRType :: Tuple.second prev.toIRType
+        )
     }
 
 
-endCustom : CustomCodec (input -> IR) output -> Codec input output
+endCustom : CustomCodec (input -> IR) VariantType output -> Codec input output
 endCustom prev =
     Codec
         { toIR = prev.match
         , fromIR = prev.fromIR
-        , toIRType = CustomType prev.toIRType
+        , toIRType =
+            let
+                ( default, variants ) =
+                    prev.toIRType
+            in
+            case variants of
+                [] ->
+                    CustomType default []
+
+                first :: rest ->
+                    CustomType first rest
         }
 
 

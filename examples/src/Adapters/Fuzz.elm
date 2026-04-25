@@ -37,7 +37,7 @@ fuzzAdapter irType =
         IR.FloatType ->
             Fuzz.float |> Fuzz.map IR.Float
 
-        IR.CustomType variants ->
+        IR.CustomType firstVariant restVariants ->
             Fuzz.oneOf
                 (List.indexedMap
                     (\idx variant ->
@@ -57,7 +57,7 @@ fuzzAdapter irType =
                                     (fuzzAdapter arg1)
                                     (fuzzAdapter arg2)
                     )
-                    (List.reverse variants)
+                    (List.reverse (firstVariant :: restVariants))
                 )
 
         IR.ProductType fields ->

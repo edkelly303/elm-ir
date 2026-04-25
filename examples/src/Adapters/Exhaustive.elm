@@ -42,7 +42,7 @@ exhaustiveAdapter irType =
         IR.FloatType ->
             Exhaustive.float |> Exhaustive.map IR.Float
 
-        IR.CustomType variants ->
+        IR.CustomType firstVariant restVariants ->
             Exhaustive.values
                 (List.indexedMap
                     (\idx variant ->
@@ -65,7 +65,7 @@ exhaustiveAdapter irType =
                                                 (exhaustiveAdapter arg2)
                                         )
                     )
-                    (List.reverse variants)
+                    (List.reverse (firstVariant :: restVariants))
                 )
                 |> Exhaustive.andThen identity
 
