@@ -188,7 +188,7 @@ list (Codec item) =
         }
 
 
-type CustomCodec input variantType output
+type CustomCodec input hasAtLeastOneVariant output
     = CustomCodec
         { match : input
         , fromIR : IR -> Result Error output
