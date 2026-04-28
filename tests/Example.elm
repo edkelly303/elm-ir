@@ -51,12 +51,7 @@ customCodec =
         )
         |> IR.variant0 Var0
         |> IR.variant1 Var1 IR.bool
-        |> IR.variant2 Var2
-            IR.int
-            (IR.succeed Tuple.pair
-                |> IR.andMap Tuple.first IR.bool
-                |> IR.andMap Tuple.second IR.char
-            )
+        |> IR.variant2 Var2 IR.int (IR.tuple IR.bool IR.char)
         |> IR.endCustom
 
 
@@ -65,8 +60,20 @@ recordFuzzer =
     Adapters.Fuzz.fuzzer recordCodec
 
 
-suite : Test
-suite =
+irTests : Test
+irTests =
+    Test.describe "IR"
+        [ fuzz recordFuzzer "record `IR.fromInput` -> `IR.toOutput` roundtrip" <|
+            \rec ->
+                rec
+                    |> IR.fromInput recordCodec
+                    |> IR.toOutput recordCodec
+                    |> Expect.equal (Ok rec)
+        ]
+
+
+diffTests : Test
+diffTests =
     Test.describe "Diff"
         [ fuzz2 recordFuzzer recordFuzzer "record diff -> patch roundtrip" <|
             \old new ->
