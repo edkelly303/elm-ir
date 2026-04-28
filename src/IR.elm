@@ -1,39 +1,77 @@
 module IR exposing
     ( Codec
-    , CustomCodec
-    , Error(..)
-    , IR(..)
-    , IRType(..)
-    , Variant(..)
-    , VariantType(..)
-    , andMap
-    , andThen
-    , bool
-    , char
-    , contramap
-    , custom
-    , endCustom
-    , float
-    , fromInput
-    , int
-    , irType
+    , IR(..), Variant(..), fromInput, toOutput, Error(..)
+    , IRType(..), VariantType(..), irType
+    , bool, char, string, int, float
     , list
-    , map
-    , string
-    , succeed
-    , toOutput
-    , variant0
-    , variant1
-    , variant2
+    , succeed, andMap
+    , CustomCodec, custom, variant0, variant1, variant2, endCustom
+    , map, contramap, andThen
     )
+
+{-|
+
+
+# elm-ir
+
+Convert between Elm data types and an intermediate representation (IR)
+
+
+## IR codecs
+
+@docs Codec
+
+
+## IR values
+
+@docs IR, Variant, fromInput, toOutput, Error
+
+
+## IR types
+
+@docs IRType, VariantType, irType
+
+
+## IR primitives
+
+@docs bool, char, string, int, float
+
+
+## IR combinators
+
+
+### Common data types
+
+@docs list
+
+
+### Product types (records, tuples and triples)
+
+@docs succeed, andMap
+
+
+### Custom types
+
+@docs CustomCodec, custom, variant0, variant1, variant2, endCustom
+
+
+### Transforming codec input and output
+
+@docs map, contramap, andThen
+
+-}
 
 import Result.Extra
 
 
+{-| TODO
+-}
 type Error
     = Error
 
 
+{-| TODO
+-}
 type Codec input output
     = Codec
         { fromInput : input -> IR
@@ -42,6 +80,8 @@ type Codec input output
         }
 
 
+{-| TODO
+-}
 type IR
     = Bool Bool
     | Char Char
@@ -53,12 +93,16 @@ type IR
     | List (List IR)
 
 
+{-| TODO
+-}
 type Variant
     = Variant0
     | Variant1 IR
     | Variant2 IR IR
 
 
+{-| TODO
+-}
 type IRType
     = BoolType
     | CharType
@@ -70,27 +114,37 @@ type IRType
     | ListType IRType
 
 
+{-| TODO
+-}
 type VariantType
     = Variant0Type
     | Variant1Type IRType
     | Variant2Type IRType IRType
 
 
+{-| TODO
+-}
 fromInput : Codec input output -> input -> IR
 fromInput (Codec c) =
     c.fromInput
 
 
+{-| TODO
+-}
 irType : Codec input output -> IRType
 irType (Codec c) =
     c.irType
 
 
+{-| TODO
+-}
 toOutput : Codec input output -> IR -> Result Error output
 toOutput (Codec c) =
     c.toOutput
 
 
+{-| TODO
+-}
 bool : Codec Bool Bool
 bool =
     Codec
@@ -107,6 +161,8 @@ bool =
         }
 
 
+{-| TODO
+-}
 char : Codec Char Char
 char =
     Codec
@@ -123,6 +179,8 @@ char =
         }
 
 
+{-| TODO
+-}
 string : Codec String String
 string =
     Codec
@@ -139,6 +197,8 @@ string =
         }
 
 
+{-| TODO
+-}
 int : Codec Int Int
 int =
     Codec
@@ -155,6 +215,8 @@ int =
         }
 
 
+{-| TODO
+-}
 float : Codec Float Float
 float =
     Codec
@@ -171,6 +233,8 @@ float =
         }
 
 
+{-| TODO
+-}
 list : Codec a a -> Codec (List a) (List a)
 list (Codec item) =
     Codec
@@ -188,6 +252,8 @@ list (Codec item) =
         }
 
 
+{-| TODO
+-}
 type CustomCodec input hasAtLeastOneVariant output
     = CustomCodec
         { match : input
@@ -197,6 +263,8 @@ type CustomCodec input hasAtLeastOneVariant output
         }
 
 
+{-| TODO
+-}
 custom : input -> CustomCodec input Never output
 custom match =
     CustomCodec
@@ -207,6 +275,8 @@ custom match =
         }
 
 
+{-| TODO
+-}
 variant0 :
     output
     -> CustomCodec (IR -> input) variantType output
@@ -231,6 +301,8 @@ variant0 ctor (CustomCodec prev) =
         }
 
 
+{-| TODO
+-}
 variant1 :
     (arg1 -> output)
     -> Codec arg1 arg1
@@ -260,6 +332,8 @@ variant1 ctor (Codec argfns) (CustomCodec prev) =
         }
 
 
+{-| TODO
+-}
 variant2 :
     (arg1 -> arg2 -> output)
     -> Codec arg1 arg1
@@ -290,6 +364,8 @@ variant2 ctor (Codec arg1fns) (Codec arg2fns) (CustomCodec prev) =
         }
 
 
+{-| TODO
+-}
 endCustom : CustomCodec (input -> IR) () output -> Codec input output
 endCustom (CustomCodec prev) =
     Codec
@@ -310,6 +386,8 @@ endCustom (CustomCodec prev) =
         }
 
 
+{-| TODO
+-}
 succeed : output -> Codec input output
 succeed ctor =
     Codec
@@ -326,6 +404,8 @@ succeed ctor =
         }
 
 
+{-| TODO
+-}
 andMap :
     (input -> field)
     -> Codec field field
@@ -361,6 +441,8 @@ andMap getter (Codec this) (Codec prev) =
         }
 
 
+{-| TODO
+-}
 map :
     (output1 -> output2)
     -> Codec input output1
@@ -373,6 +455,8 @@ map f (Codec prev) =
         }
 
 
+{-| TODO
+-}
 contramap :
     (input2 -> input1)
     -> Codec input1 output
@@ -385,6 +469,8 @@ contramap f (Codec prev) =
         }
 
 
+{-| TODO
+-}
 andThen :
     (output1 -> Result Error output2)
     -> Codec input output1
