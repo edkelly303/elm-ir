@@ -57,14 +57,16 @@ main =
         codec =
             IR.list IR.bool
 
-        ( old, _ ) =
-            ( [ False ], () )
+        old =
+            [ False ]
 
         --Random.step (Adapters.Random.generator codec) (Random.initialSeed 0)
-        ( new, _ ) =
-            ( [], () )
+        --|> Tuple.first
+        new =
+            []
 
         --Random.step (Adapters.Random.generator codec) (Random.initialSeed 1)
+        --|> Tuple.first
         diff =
             Adapters.Diff.diff codec old new
 
