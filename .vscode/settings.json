@@ -1,3 +1,7 @@
 {
-    "nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix"
+    "nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix",
+    "nixEnvSelector.useFlakes": true,
+    "elmLS.disableElmLSDiagnostics": true,
+    "elmLS.elmReviewDiagnostics": "warning",
+    "elmLS.elmTestRunner.showElmTestOutput": false
 }
