@@ -75,23 +75,23 @@ irTests =
 diffTests : Test
 diffTests =
     Test.describe "Diff"
-        [ fuzz2 recordFuzzer recordFuzzer "record diff -> patch roundtrip" <|
-            \old new ->
-                let
-                    diff =
-                        Adapters.Diff.diff recordCodec old new
-
-                    patched =
-                        Adapters.Diff.patch recordCodec diff old
-                in
-                Expect.equal (Ok new) patched
-        , fuzz2 (Adapters.Fuzz.fuzzer IR.int) (Adapters.Fuzz.fuzzer IR.int) "int" <|
-            \i1 i2 ->
-                let
-                    diff =
-                        Adapters.Diff.diff IR.int i1 i2
-                in
-                Expect.equal
-                    (Adapters.Diff.patch IR.int diff i1)
-                    (Ok i2)
+        [ roundTrip recordCodec "record"
+        , roundTrip IR.int "int"
+        , roundTrip (IR.list IR.int) "list int"
         ]
+
+
+roundTrip : IR.Codec b b -> String -> Test
+roundTrip codec name =
+    fuzz2
+        (Adapters.Fuzz.fuzzer codec)
+        (Adapters.Fuzz.fuzzer codec)
+        (name ++ " diff -> patch roundtrip")
+    <|
+        \old new ->
+            let
+                diff =
+                    Adapters.Diff.diff codec old new
+            in
+            Adapters.Diff.patch codec diff old
+                |> Expect.equal (Ok new)
