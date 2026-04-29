@@ -51,26 +51,26 @@ exampleCodec =
         |> IR.endCustom
 
 
-
 main : Html.Html msg
 main =
     let
-        codec = 
+        codec =
             IR.list IR.bool
+
         ( old, _ ) =
-            ([False], ())
-            --Random.step (Adapters.Random.generator codec) (Random.initialSeed 0)
+            ( [ False ], () )
 
+        --Random.step (Adapters.Random.generator codec) (Random.initialSeed 0)
         ( new, _ ) =
-            ([], ())
-            --Random.step (Adapters.Random.generator codec) (Random.initialSeed 1)
+            ( [], () )
 
+        --Random.step (Adapters.Random.generator codec) (Random.initialSeed 1)
         diff =
             Adapters.Diff.diff codec old new
 
         patched =
             Adapters.Diff.patch codec diff old
-            
+
         fuzzed =
             Fuzz.examples 2 (Adapters.Fuzz.fuzzer codec)
 
@@ -79,8 +79,6 @@ main =
 
         decoded =
             JD.decodeString (Adapters.Json.decoder codec) encoded
-
-
     in
     Html.pre []
         [ head "Generator ('old' value)"
@@ -112,4 +110,4 @@ head txt =
 
 show : a -> Html.Html msg
 show a =
-    Html.div [] [Html.text (Debug.toString a)]
+    Html.div [] [ Html.text (Debug.toString a) ]
