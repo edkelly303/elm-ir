@@ -54,16 +54,16 @@ exampleCodec =
 main : Html.Html msg
 main =
     let
-        codec =
-            exampleCodec
+        codec = IR.list IR.int
+            --exampleCodec
 
-        old =
-            Random.step (Adapters.Random.generator codec) (Random.initialSeed 14)
-                |> Tuple.first
+        old = [0,1,2]
+            -- Random.step (Adapters.Random.generator codec) (Random.initialSeed 14)
+            --     |> Tuple.first
 
-        new =
-            Random.step (Adapters.Random.generator codec) (Random.initialSeed 15)
-                |> Tuple.first
+        new =[0,1,2,2,1,0,2,1,0]
+            -- Random.step (Adapters.Random.generator codec) (Random.initialSeed 15)
+            --     |> Tuple.first
 
         diff =
             Adapters.Diff.diff codec old new
@@ -72,7 +72,7 @@ main =
             Adapters.Diff.patch codec diff old
 
         fuzzed =
-            Fuzz.examples 2 (Adapters.Fuzz.fuzzer codec)
+            Fuzz.examples 1 (Adapters.Fuzz.fuzzer codec)
 
         encoded =
             JE.encode 2 (Adapters.Json.encode codec old)
@@ -94,9 +94,9 @@ main =
         , show patched
         , head "Did patch work?"
         , show (patched == Ok new)
-        , head "JSON encoder"
+        , head "JSON encoder (old value)"
         , Html.text encoded
-        , head "JSON decoder"
+        , head "JSON decoder (old value)"
         , show decoded
         , head "Fuzzer"
         , show fuzzed

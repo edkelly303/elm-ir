@@ -27,7 +27,7 @@ type ListChange
     | Moved Int
     | Updated Int Diff
     | Existing Int Int
-    | Run Int ListChange
+    | Repeat Int ListChange
 
 
 diff : IR.Codec output output -> output -> output -> Diff
@@ -107,6 +107,8 @@ diffHelp oldIR_ newIR_ irType_ =
                         { idx = 0, out = [] }
                     |> .out
                     |> List.filterMap identity
+                    |> coalesceForwardMoveSequences
+                    |> coalesceBackwardMoveSequences
                     |> doRunLengthEncoding
                     |> ListChanges
 
@@ -184,6 +186,65 @@ diffHelp oldIR_ newIR_ irType_ =
                 Identical
 
 
+coalesceForwardMoveSequences : List ListChange -> List ListChange
+coalesceForwardMoveSequences list =
+    List.foldr
+        (\item prev ->
+            case ( prev, item ) of
+                ( [], _ ) ->
+                    [ item ]
+
+                ( (Moved prevMove) :: restPrevItems, Moved move ) ->
+                    if prevMove == move - 1 then
+                        Existing prevMove move :: restPrevItems
+
+                    else
+                        item :: prev
+
+                ( (Existing start end) :: restPrevItems, Moved move ) ->
+                    if end == move - 1 then
+                        Existing start move :: restPrevItems
+
+                    else
+                        item :: prev
+
+                _ ->
+                    item :: prev
+        )
+        []
+        list
+
+
+coalesceBackwardMoveSequences : List ListChange -> List ListChange
+coalesceBackwardMoveSequences list =
+    List.foldl
+        (\item prev ->
+            case ( prev, item ) of
+                ( [], _ ) ->
+                    [ item ]
+
+                ( (Moved prevMove) :: restPrevItems, Moved move ) ->
+                    if prevMove == move - 1 then
+                        Existing move prevMove :: restPrevItems
+
+                    else
+                        item :: prev
+
+                ( (Existing end start) :: restPrevItems, Moved move ) ->
+                    if end == move - 1 then
+                        Existing move start :: restPrevItems
+
+                    else
+                        item :: prev
+
+                _ ->
+                    item :: prev
+        )
+        []
+        list
+        |> List.reverse
+
+
 doRunLengthEncoding : List ListChange -> List ListChange
 doRunLengthEncoding list =
     List.foldr
@@ -194,16 +255,16 @@ doRunLengthEncoding list =
 
                 prevItem :: restPrevItems ->
                     case prevItem of
-                        Run length runItem ->
+                        Repeat length runItem ->
                             if item == runItem then
-                                Run (length + 1) runItem :: restPrevItems
+                                Repeat (length + 1) runItem :: restPrevItems
 
                             else
                                 item :: prev
 
                         _ ->
                             if item == prevItem then
-                                Run 2 item :: restPrevItems
+                                Repeat 2 item :: restPrevItems
 
                             else
                                 item :: prev
@@ -269,7 +330,7 @@ size changes =
                         Existing _ _ ->
                             1
 
-                        Run _ _ ->
+                        Repeat _ _ ->
                             1
                 )
                 cs
@@ -509,12 +570,20 @@ listPatchHelp change oldList itemType =
                 |> Maybe.map List.singleton
 
         Existing start end ->
-            oldList
-                |> List.drop start
-                |> List.take (1 + end - start)
-                |> Just
+            if start < end then
+                oldList
+                    |> List.drop start
+                    |> List.take (1 + end - start)
+                    |> Just
 
-        Run length change_ ->
+            else
+                oldList
+                    |> List.drop end
+                    |> List.take (1 + start - end)
+                    |> List.reverse
+                    |> Just
+
+        Repeat length change_ ->
             listPatchHelp change_ oldList itemType
                 |> List.repeat length
                 |> Maybe.Extra.combine
