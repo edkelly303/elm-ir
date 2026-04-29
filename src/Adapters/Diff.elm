@@ -96,13 +96,7 @@ diffHelp oldIR_ newIR_ irType_ =
 
                                 ListDiffer.NoChange _ ->
                                     { idx = idx + 1
-                                    , out =
-                                        case out of
-                                            (Just (RangeForward prevStart _)) :: rest ->
-                                                Just (RangeForward prevStart idx) :: rest
-
-                                            _ ->
-                                                Just (RangeForward idx idx) :: out
+                                    , out = Just (Moved idx) :: out
                                     }
                         )
                         { idx = 0, out = [] }
@@ -195,14 +189,14 @@ coalesceForwardMoveSequences list =
                     [ item ]
 
                 ( (Moved prevMove) :: restPrevItems, Moved move ) ->
-                    if prevMove == move - 1 then
+                    if move == prevMove + 1 then
                         RangeForward prevMove move :: restPrevItems
 
                     else
                         item :: prev
 
                 ( (RangeForward start end) :: restPrevItems, Moved move ) ->
-                    if end == move - 1 then
+                    if move == end + 1 then
                         RangeForward start move :: restPrevItems
 
                     else
@@ -224,14 +218,14 @@ coalesceBackwardMoveSequences list =
                     [ item ]
 
                 ( (Moved prevMove) :: restPrevItems, Moved move ) ->
-                    if prevMove == move - 1 then
+                    if move == prevMove + 1 then
                         RangeBackward move prevMove :: restPrevItems
 
                     else
                         item :: prev
 
                 ( (RangeBackward end start) :: restPrevItems, Moved move ) ->
-                    if end == move - 1 then
+                    if move == end + 1 then
                         RangeBackward move start :: restPrevItems
 
                     else
