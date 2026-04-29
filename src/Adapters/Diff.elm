@@ -157,8 +157,7 @@ diffHelp oldIR_ newIR_ irType_ =
                         List.Extra.getAt newSelected (firstVariantType :: restVariantTypes)
                             |> Maybe.withDefault firstVariantType
                             |> argTypesToList
-                in
-                let
+
                     diffedArgs =
                         if oldSelected == newSelected then
                             let
