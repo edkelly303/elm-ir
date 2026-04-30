@@ -76,31 +76,37 @@ type Error
 -}
 type Codec input output
     = Codec
-        { fromInput : input -> IR
-        , toOutput : IR -> Result Error output
+        { fromInput : input -> IRValue
+        , toOutput : IRValue -> Result Error output
         , irType : IRType
         }
 
 
 {-| TODO
 -}
-type IR
+type IR a
+    = IR IRValue
+
+
+{-| TODO
+-}
+type IRValue
     = Bool Bool
     | Char Char
     | String String
     | Int Int
     | Float Float
     | Custom Int Variant
-    | Product (List IR)
-    | List (List IR)
+    | Product (List IRValue)
+    | List (List IRValue)
 
 
 {-| TODO
 -}
 type Variant
     = Variant0
-    | Variant1 IR
-    | Variant2 IR IR
+    | Variant1 IRValue
+    | Variant2 IRValue IRValue
 
 
 {-| TODO
@@ -126,23 +132,23 @@ type VariantType
 
 {-| TODO
 -}
-fromInput : Codec input output -> input -> IR
-fromInput (Codec c) =
-    c.fromInput
+fromInput : Codec a a -> a -> IR a
+fromInput (Codec c) input =
+    c.fromInput input |> IR
 
 
 {-| TODO
 -}
-irType : Codec input output -> IRType
+irType : Codec a a -> IRType
 irType (Codec c) =
     c.irType
 
 
 {-| TODO
 -}
-toOutput : Codec input output -> IR -> Result Error output
-toOutput (Codec c) =
-    c.toOutput
+toOutput : Codec a a -> IR a -> Result Error a
+toOutput (Codec c) (IR irValue) =
+    c.toOutput irValue
 
 
 {-| TODO
@@ -335,7 +341,7 @@ triple a b c =
 type CustomCodec input hasAtLeastOneVariant output
     = CustomCodec
         { match : input
-        , fromIR : IR -> Result Error output
+        , fromIR : IRValue -> Result Error output
         , variantTypes : List VariantType
         , index : Int
         }
@@ -357,7 +363,7 @@ custom match =
 -}
 variant0 :
     output
-    -> CustomCodec (IR -> input) variantType output
+    -> CustomCodec (IRValue -> input) variantType output
     -> CustomCodec input () output
 variant0 ctor (CustomCodec prev) =
     CustomCodec
@@ -384,7 +390,7 @@ variant0 ctor (CustomCodec prev) =
 variant1 :
     (arg1 -> output)
     -> Codec arg1 arg1
-    -> CustomCodec ((arg1 -> IR) -> input) variantType output
+    -> CustomCodec ((arg1 -> IRValue) -> input) variantType output
     -> CustomCodec input () output
 variant1 ctor (Codec argfns) (CustomCodec prev) =
     let
@@ -416,7 +422,7 @@ variant2 :
     (arg1 -> arg2 -> output)
     -> Codec arg1 arg1
     -> Codec arg2 arg2
-    -> CustomCodec ((arg1 -> arg2 -> IR) -> input) variantType output
+    -> CustomCodec ((arg1 -> arg2 -> IRValue) -> input) variantType output
     -> CustomCodec input () output
 variant2 ctor (Codec arg1fns) (Codec arg2fns) (CustomCodec prev) =
     let
@@ -444,7 +450,7 @@ variant2 ctor (Codec arg1fns) (Codec arg2fns) (CustomCodec prev) =
 
 {-| TODO
 -}
-endCustom : CustomCodec (input -> IR) () output -> Codec input output
+endCustom : CustomCodec (a -> IRValue) () a -> Codec a a
 endCustom (CustomCodec prev) =
     Codec
         { fromInput = prev.match
