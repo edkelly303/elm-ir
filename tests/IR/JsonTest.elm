@@ -1,16 +1,17 @@
-module DiffTest exposing (..)
+module IR.JsonTest exposing (..)
 
 import Expect
 import IR
-import IR.Diff
 import IR.Fuzz
+import IR.Json
+import Json.Decode
 import Test exposing (..)
 import TestHelpers exposing (..)
 
 
 diffTests : Test
 diffTests =
-    Test.describe "IR.Diff"
+    Test.describe "IR.Json"
         [ roundTrip recordCodec "Record"
         , roundTrip IR.int "Int"
         , roundTrip (IR.list IR.bool) "List Bool"
@@ -19,15 +20,14 @@ diffTests =
 
 roundTrip : IR.Codec b b -> String -> Test
 roundTrip codec name =
-    fuzz2
+    fuzz
         (IR.Fuzz.fuzzer codec)
-        (IR.Fuzz.fuzzer codec)
-        (name ++ " diff -> patch roundtrip")
+        (name ++ " encode -> decode roundtrip")
     <|
-        \old new ->
+        \value ->
             let
-                diff =
-                    IR.Diff.diff codec old new
+                encoded =
+                    IR.Json.encode codec value
             in
-            IR.Diff.patch codec diff old
-                |> Expect.equal (Ok new)
+            Json.Decode.decodeValue (IR.Json.decoder codec) encoded
+                |> Expect.equal (Ok value)
