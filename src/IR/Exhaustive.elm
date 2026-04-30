@@ -1,4 +1,4 @@
-module Adapters.Exhaustive exposing (..)
+module IR.Exhaustive exposing (..)
 
 import Exhaustive
 import IR exposing (IR, IRType)

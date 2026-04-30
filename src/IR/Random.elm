@@ -1,4 +1,4 @@
-module Adapters.Random exposing (..)
+module IR.Random exposing (..)
 
 import IR exposing (IR, IRType)
 import Random

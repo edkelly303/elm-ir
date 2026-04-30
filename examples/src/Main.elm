@@ -1,9 +1,9 @@
 module Main exposing (..)
 
-import Adapters.Diff
-import Adapters.Fuzz
-import Adapters.Json
-import Adapters.Random
+import IR.Diff
+import IR.Fuzz
+import IR.Json
+import IR.Random
 import Fuzz
 import Html
 import IR
@@ -58,27 +58,27 @@ main =
             IR.list exampleCodec
 
         old = 
-            Random.step (Adapters.Random.generator codec) (Random.initialSeed 14)
+            Random.step (IR.Random.generator codec) (Random.initialSeed 14)
                 |> Tuple.first
 
         new =
-            Random.step (Adapters.Random.generator codec) (Random.initialSeed 16)
+            Random.step (IR.Random.generator codec) (Random.initialSeed 16)
                 |> Tuple.first
 
         diff =
-            Adapters.Diff.diff codec old new
+            IR.Diff.diff codec old new
 
         patched =
-            Adapters.Diff.patch codec diff old
+            IR.Diff.patch codec diff old
 
         fuzzed =
-            Fuzz.examples 1 (Adapters.Fuzz.fuzzer codec)
+            Fuzz.examples 1 (IR.Fuzz.fuzzer codec)
 
         encoded =
-            JE.encode 2 (Adapters.Json.encode codec old)
+            JE.encode 2 (IR.Json.encode codec old)
 
         decoded =
-            JD.decodeString (Adapters.Json.decoder codec) encoded
+            JD.decodeString (IR.Json.decoder codec) encoded
     in
     Html.pre []
         [ head "Generator ('old' value)"

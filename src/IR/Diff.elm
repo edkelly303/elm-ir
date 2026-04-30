@@ -1,4 +1,4 @@
-module Adapters.Diff exposing (..)
+module IR.Diff exposing (..)
 
 import Dict
 import Diff as ListDiffer

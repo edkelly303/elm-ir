@@ -1,7 +1,7 @@
 module Example exposing (..)
 
-import Adapters.Diff
-import Adapters.Fuzz
+import IR.Diff
+import IR.Fuzz
 import Expect
 import Fuzz exposing (Fuzzer)
 import IR
@@ -57,7 +57,7 @@ customCodec =
 
 recordFuzzer : Fuzzer Record
 recordFuzzer =
-    Adapters.Fuzz.fuzzer recordCodec
+    IR.Fuzz.fuzzer recordCodec
 
 
 irTests : Test
@@ -84,14 +84,14 @@ diffTests =
 roundTrip : IR.Codec b b -> String -> Test
 roundTrip codec name =
     fuzz2
-        (Adapters.Fuzz.fuzzer codec)
-        (Adapters.Fuzz.fuzzer codec)
+        (IR.Fuzz.fuzzer codec)
+        (IR.Fuzz.fuzzer codec)
         (name ++ " diff -> patch roundtrip")
     <|
         \old new ->
             let
                 diff =
-                    Adapters.Diff.diff codec old new
+                    IR.Diff.diff codec old new
             in
-            Adapters.Diff.patch codec diff old
+            IR.Diff.patch codec diff old
                 |> Expect.equal (Ok new)

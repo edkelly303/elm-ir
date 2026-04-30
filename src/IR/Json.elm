@@ -1,4 +1,4 @@
-module Adapters.Json exposing (..)
+module IR.Json exposing (..)
 
 -- import Exhaustive
 

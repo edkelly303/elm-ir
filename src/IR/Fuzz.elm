@@ -1,4 +1,4 @@
-module Adapters.Fuzz exposing (..)
+module IR.Fuzz exposing (..)
 
 import Fuzz
 import IR exposing (IR, IRType)
